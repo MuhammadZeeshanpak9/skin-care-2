@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* aïaaïa Brand Palette */
+    --background: 33 100% 97%;
+    --foreground: 30 11% 16%;
+    --card: 33 100% 97%;
+    --card-foreground: 30 11% 16%;
+    --popover: 33 100% 97%;
+    --popover-foreground: 30 11% 16%;
+    --primary: 30 11% 16%;
+    --primary-foreground: 33 100% 97%;
+    --secondary: 30 20% 93%;
+    --secondary-foreground: 30 11% 16%;
+    --muted: 30 15% 90%;
+    --muted-foreground: 30 8% 43%;
+    --accent: 41 45% 59%;
+    --accent-foreground: 30 11% 16%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 41 45% 59% / 0.20;
+    --input: 30 11% 16% / 0.08;
+    --ring: 41 45% 59%;
+    --radius: 0.625rem;
+
+    /* Brand color shortcuts */
+    --cream: #FFF9F3;
+    --deep-green: #005450;
+    --rich-green: #084C3F;
+    --dark-green: #013A3A;
+    --solar-gold: #F2A900;
+    --light-sage: #E4F4DE;
+    --warm-peach: #FFD6BA;
+    --champagne: #E8D7B8;
+    --rose: #D9B6AA;
+    --luxury-green: #7C9A78;
+    --botanical-green: #536B4F;
+    --blush-rose: #C4817A;
+    --text-primary: #2E2923;
+    --text-muted: #7A7168;
+    --text-light: #B5A99A;
+    --dark-panel: #1C1A17;
+    --dark-card: #242018;
+    --border-warm: rgba(199, 167, 106, 0.20);
+    --border-soft: rgba(46, 41, 35, 0.08);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-cream text-text-primary antialiased;
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    line-height: 1.75;
+  }
+
+  * {
+    border-color: var(--border-warm);
+  }
+
+  /* Typography utilities */
+  .font-display {
+    font-family: 'Cormorant Garamond', serif;
+  }
+
+  .font-body {
+    font-family: 'Jost', sans-serif;
+  }
+
+  .font-editorial {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .font-sans {
+    font-family: 'Manrope', sans-serif;
+  }
+}
+
+@layer components {
+  /* Glass System */
+  .glass-warm {
+    background: rgba(255, 252, 248, 0.60);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.70);
+    box-shadow: 0 4px 32px rgba(46, 41, 35, 0.06),
+      inset 0 1px 1px rgba(255, 255, 255, 0.90);
+  }
+
+  .glass-dark {
+    background: rgba(28, 26, 23, 0.55);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(199, 167, 106, 0.15);
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.25),
+      inset 0 1px 1px rgba(199, 167, 106, 0.10);
+  }
+
+  .glass-gold {
+    background: rgba(199, 167, 106, 0.08);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid rgba(199, 167, 106, 0.30);
+    box-shadow: 0 4px 40px rgba(199, 167, 106, 0.12),
+      inset 0 1px 1px rgba(199, 167, 106, 0.20);
+  }
+
+  /* Overline style */
+  .overline {
+    @apply text-overline font-jost font-medium uppercase tracking-[0.18em];
+  }
+
+  /* Liquid button hover effect */
+  .btn-liquid {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .btn-liquid::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+  }
+
+  .btn-liquid:hover::before {
+    width: 300%;
+    height: 300%;
+  }
+
+  /* Card hover lift */
+  .card-lift {
+    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      box-shadow 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .card-lift:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 40px rgba(46, 41, 35, 0.12);
+  }
+
+  /* Image slow zoom on hover */
+  .img-zoom {
+    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .img-zoom:hover {
+    transform: scale(1.05);
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--cream);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--champagne);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--solar-gold);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
