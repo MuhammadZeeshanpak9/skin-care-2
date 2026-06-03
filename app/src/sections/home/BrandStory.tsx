@@ -13,7 +13,7 @@ export default function BrandStory() {
   const imageY = useTransform(scrollYProgress, [0, 1], [50, -50]);
 
   return (
-    <section ref={sectionRef} className="relative py-24 lg:py-32 bg-[#F6EFE6] overflow-hidden">
+    <section ref={sectionRef} className="relative py-24 lg:py-32 bg-transparent overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
           {/* Left: Image */}

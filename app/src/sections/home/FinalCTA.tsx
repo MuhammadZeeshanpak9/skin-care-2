@@ -36,7 +36,7 @@ export default function FinalCTA() {
           whileInView="visible"
           viewport={{ once: true, margin: '-60px' }}
           variants={fadeUp()}
-          className="lg:w-1/2 bg-dark-panel flex items-center"
+          className="lg:w-1/2 bg-black/40 backdrop-blur-md flex items-center"
         >
           <div className="px-8 sm:px-12 lg:px-20 py-16 lg:py-24 w-full max-w-lg">
             <h2 className="font-jost font-black text-3xl lg:text-4xl text-cream uppercase tracking-tight mb-4">

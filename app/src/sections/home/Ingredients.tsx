@@ -112,7 +112,7 @@ function IngredientCard({
 
 export default function Ingredients() {
   return (
-    <section className="relative py-24 lg:py-32 bg-[#F6EFE6] overflow-hidden">
+    <section className="relative py-24 lg:py-32 bg-transparent overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
         {/* Header */}
         <motion.div

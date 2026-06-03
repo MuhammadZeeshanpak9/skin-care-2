@@ -22,7 +22,7 @@ const trustItems = [
 
 export default function TrustBar() {
   return (
-    <section className="relative py-20 bg-[#F6EFE6]">
+    <section className="relative py-20 bg-transparent">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10">
         <motion.div
           initial="hidden"

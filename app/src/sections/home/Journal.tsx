@@ -39,7 +39,7 @@ export default function Journal() {
   const others = articles.filter((a) => !a.featured);
 
   return (
-    <section className="relative py-24 lg:py-32 bg-dark-panel">
+    <section className="relative py-24 lg:py-32 bg-black/40 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
         {/* Header */}
         <motion.div

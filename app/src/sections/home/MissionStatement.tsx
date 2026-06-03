@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, type MotionValue } from 'framer-motion';
 
 const lines = [
   { text: 'KNOW YOUR', style: 'font-jost font-black uppercase' },
@@ -19,6 +19,27 @@ const trustStatements = [
   },
 ];
 
+interface LineRevealProps {
+  text: string
+  style: string
+  scrollProgress: MotionValue<number>
+  index: number
+}
+
+function LineReveal({ text, style, scrollProgress, index }: LineRevealProps) {
+  const start = index * 0.08;
+  const y = useTransform(scrollProgress, [start, start + 0.4, 1], [80, 0, -40]);
+  const opacity = useTransform(scrollProgress, [start, start + 0.2, 0.7, 1], [0, 1, 1, 0.8]);
+
+  return (
+    <motion.div style={{ y, opacity }} className="overflow-hidden">
+      <p className={`${style} text-[12vw] lg:text-[15vw] leading-[0.9] tracking-[-2px] text-text-primary`}>
+        {text}
+      </p>
+    </motion.div>
+  );
+}
+
 export default function MissionStatement() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
@@ -27,36 +48,19 @@ export default function MissionStatement() {
   });
 
   return (
-    <section ref={sectionRef} className="relative py-24 lg:py-32 bg-[#F6EFE6] overflow-hidden">
+    <section ref={sectionRef} className="relative py-24 lg:py-32 bg-transparent overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 relative">
         {/* Giant typography */}
         <div className="relative">
-          {lines.map((line, index) => {
-            const y = useTransform(
-              scrollYProgress,
-              [0, 0.5, 1],
-              [80, 0, -40]
-            );
-            const opacity = useTransform(
-              scrollYProgress,
-              [0, 0.3, 0.7, 1],
-              [0, 1, 1, 0.8]
-            );
-
-            return (
-              <motion.div
-                key={index}
-                style={{ y, opacity }}
-                className="overflow-hidden"
-              >
-                <p
-                  className={`${line.style} text-[12vw] lg:text-[15vw] leading-[0.9] tracking-[-2px] text-text-primary`}
-                >
-                  {line.text}
-                </p>
-              </motion.div>
-            );
-          })}
+          {lines.map((line, index) => (
+            <LineReveal
+              key={index}
+              text={line.text}
+              style={line.style}
+              scrollProgress={scrollYProgress}
+              index={index}
+            />
+          ))}
         </div>
 
         {/* Right column trust statements (desktop) */}

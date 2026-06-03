@@ -3,12 +3,21 @@ import { Instagram, Youtube, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { fadeUp, staggerContainer, staggerItem } from '@/lib/animations';
 
+const FOOTER_ORBS = Array.from({ length: 6 }, () => ({
+  width: 20 + Math.random() * 40,
+  height: 20 + Math.random() * 40,
+  left: `${Math.random() * 100}%`,
+  top: `${Math.random() * 100}%`,
+  duration: 8 + Math.random() * 6,
+  delay: Math.random() * 4,
+}));
+
 const footerLinks = {
   explore: [
     { label: 'Shop All', href: '/products' },
     { label: 'Boutique', href: '/boutique' },
     { label: 'Skin Assessment', href: '/assessment' },
-    { label: 'Journal', href: '/journal' },
+    { label: 'Journal', href: '/boutique' },
   ],
   clientCare: [
     { label: 'Contact Us', href: '#' },
@@ -41,15 +50,15 @@ export default function Footer() {
     <footer className="relative bg-dark-panel overflow-hidden">
       {/* Botanical floating elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
-        {Array.from({ length: 6 }).map((_, i) => (
+        {FOOTER_ORBS.map((orb, i) => (
           <motion.div
             key={i}
             className="absolute rounded-full"
             style={{
-              width: 20 + Math.random() * 40,
-              height: 20 + Math.random() * 40,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
+              width: orb.width,
+              height: orb.height,
+              left: orb.left,
+              top: orb.top,
               background: 'radial-gradient(circle, rgba(199,167,106,0.15) 0%, transparent 70%)',
             }}
             animate={{
@@ -58,9 +67,9 @@ export default function Footer() {
               opacity: [0.3, 0.6, 0.3],
             }}
             transition={{
-              duration: 8 + Math.random() * 6,
+              duration: orb.duration,
               repeat: Infinity,
-              delay: Math.random() * 4,
+              delay: orb.delay,
               ease: 'easeInOut',
             }}
           />

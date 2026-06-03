@@ -1,495 +1,475 @@
 import { useEffect, useRef, useCallback } from 'react';
 
-/* ───────────── Types ───────────── */
-interface Flower {
+/* ─────────────────────────────────────────
+   Types
+───────────────────────────────────────── */
+interface Petal3D {
   x: number;
   y: number;
+  vx: number;
+  vy: number;
   size: number;
-  speed: number;
-  opacity: number;
   rotation: number;
   rotSpeed: number;
-  sway: number;
-  swaySpeed: number;
-  swayAmp: number;
-  type: number;
+  tilt: number;      // simulates 3D perspective tilt
+  tiltSpeed: number;
+  opacity: number;
   color: string;
+  highlightColor: string;
+  shadowColor: string;
+  layer: number;
 }
 
-interface Particle {
+interface Molecule {
   x: number;
   y: number;
-  size: number;
-  speed: number;
+  vx: number;
+  vy: number;
+  scale: number;
+  rotation: number;
+  rotSpeed: number;
   opacity: number;
-  drift: number;
-  driftSpeed: number;
-  twinkleSpeed: number;
-  twinkleOffset: number;
-  color: string;
-  hasGlow: boolean;
+  type: number;
 }
 
-interface RiverLine {
-  points: { x: number; y: number }[];
-  speed: number;
-  opacity: number;
-  width: number;
-  dashOffset: number;
-  shimmerPositions: number[];
-}
-
-/* ───────────── Constants ───────────── */
-const FLOWER_COLORS = ['#D9B6AA', '#F6EFE6', '#C4817A', '#7C9A78', '#E8D7B8'];
-const PARTICLE_COLORS = ['#C7A76A', '#E8D7B8', '#FFFFFF'];
-const FLOWER_COUNT = 28;
-const PARTICLE_COUNT = 50;
-const RIVER_LINE_COUNT = 10;
-
-/* ───────────── SVG Flower Paths ───────────── */
-const FLOWER_PATHS = [
-  // Cherry blossom petal (5 petals)
-  (s: number) => {
-    const r = s / 2;
-    return `M0,${-r} C${r*0.6},${-r} ${r},${-r*0.6} ${r},0 C${r},${r*0.6} ${r*0.6},${r} 0,${r} C${-r*0.6},${r} ${-r},${r*0.6} ${-r},0 C${-r},${-r*0.6} ${-r*0.6},${-r} 0,${-r} Z`;
-  },
-  // Daisy (8 petals radiating)
-  (s: number) => {
-    const r = s / 2;
-    let d = '';
-    for (let i = 0; i < 8; i++) {
-      const angle = (i * Math.PI * 2) / 8;
-      const x1 = Math.cos(angle) * r * 0.3;
-      const y1 = Math.sin(angle) * r * 0.3;
-      const x2 = Math.cos(angle) * r;
-      const y2 = Math.sin(angle) * r;
-      const nx = -Math.sin(angle) * r * 0.25;
-      const ny = Math.cos(angle) * r * 0.25;
-      d += `M${x1},${y1} Q${x2+nx},${y2+ny} ${x2},${y2} Q${x2-nx},${y2-ny} ${x1},${y1} `;
-    }
-    return d + `M0,0 m-${r*0.15},0 a${r*0.15},${r*0.15} 0 1,0 ${r*0.3},0 a${r*0.15},${r*0.15} 0 1,0 -${r*0.3},0`;
-  },
-  // Hibiscus petal (5 pointed petals)
-  (s: number) => {
-    const r = s / 2;
-    let d = '';
-    for (let i = 0; i < 5; i++) {
-      const angle = (i * Math.PI * 2) / 5 - Math.PI / 2;
-      const innerR = r * 0.2;
-      const outerR = r;
-      const midR = r * 0.7;
-      const x1 = Math.cos(angle) * innerR;
-      const y1 = Math.sin(angle) * innerR;
-      const x2 = Math.cos(angle - 0.3) * midR;
-      const y2 = Math.sin(angle - 0.3) * midR;
-      const x3 = Math.cos(angle) * outerR;
-      const y3 = Math.sin(angle) * outerR;
-      const x4 = Math.cos(angle + 0.3) * midR;
-      const y4 = Math.sin(angle + 0.3) * midR;
-      d += `M${x1},${y1} Q${x2},${y2} ${x3},${y3} Q${x4},${y4} ${x1},${y1} `;
-    }
-    return d;
-  },
-  // Leaf shape
-  (s: number) => {
-    const r = s / 2;
-    return `M0,${-r} C${r*0.5},${-r*0.5} ${r},0 ${r*0.3},${r*0.5} C${r*0.1},${r*0.7} ${-r*0.1},${r*0.7} ${-r*0.3},${r*0.5} C${-r},0 ${-r*0.5},${-r*0.5} 0,${-r} Z`;
-  },
-  // Jasmine (small 6-petal)
-  (s: number) => {
-    const r = s / 2;
-    let d = '';
-    for (let i = 0; i < 6; i++) {
-      const angle = (i * Math.PI * 2) / 6;
-      const cx = Math.cos(angle) * r * 0.5;
-      const cy = Math.sin(angle) * r * 0.5;
-      d += `M${cx},${cy} m0,${-r*0.3} a${r*0.25},${r*0.3} 0 1,0 0,${r*0.6} a${r*0.25},${r*0.3} 0 1,0 0,${-r*0.6} `;
-    }
-    return d;
-  },
+/* ─────────────────────────────────────────
+   Molecule Shapes
+───────────────────────────────────────── */
+const SHAPES = [
+  { nodes: [[0, 0], [0, -1], [0.866, 0.5], [-0.866, 0.5]] as [number, number][], edges: [[0,1],[0,2],[0,3]] as [number,number][] },
+  { nodes: [[-1, 0.15], [0, -0.15], [1, 0.15]] as [number, number][], edges: [[0,1],[1,2]] as [number,number][] },
+  { nodes: [[0, 0]] as [number, number][], edges: [] as [number, number][] },
 ];
 
-/* ───────────── Component ───────────── */
+/* ─────────────────────────────────────────
+   3D Petal Colors (warm skin tones + subtle pink accents)
+───────────────────────────────────────── */
+const PETAL_PALETTES = [
+  { body: 'rgba(210,180,160,', hl: 'rgba(245,235,225,', sh: 'rgba(180,150,130,' }, // warm skin
+  { body: 'rgba(200,170,150,', hl: 'rgba(240,228,218,', sh: 'rgba(170,140,120,' }, // deeper skin
+  { body: 'rgba(220,185,170,', hl: 'rgba(250,240,232,', sh: 'rgba(190,158,140,' }, // rosy skin
+  { body: 'rgba(215,160,165,', hl: 'rgba(245,220,222,', sh: 'rgba(185,130,135,' }, // subtle pink accent
+  { body: 'rgba(195,175,155,', hl: 'rgba(235,225,215,', sh: 'rgba(165,145,125,' }, // sand
+];
+
+/* ─────────────────────────────────────────
+   Helpers
+───────────────────────────────────────── */
+const rnd = () => Math.random();
+const rndR = (a: number, b: number) => a + rnd() * (b - a);
+const pick = <T,>(arr: T[]) => arr[Math.floor(rnd() * arr.length)];
+
+const PETAL_COUNT = 22;
+const MOL_COUNT = 8; // Very few molecules, subtle
+
+/* ─────────────────────────────────────────
+   Component
+───────────────────────────────────────── */
 export default function BackgroundEngine() {
-  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const flowersRef = useRef<Flower[]>([]);
-  const particlesRef = useRef<Particle[]>([]);
-  const riverLinesRef = useRef<RiverLine[]>([]);
-  const animFrameRef = useRef<number>(0);
-  const timeRef = useRef<number>(0);
+  const petalsRef = useRef<Petal3D[]>([]);
+  const molsRef = useRef<Molecule[]>([]);
+  const rafRef = useRef(0);
+  const visRef = useRef(true);
+  const tRef = useRef(0);
 
-  /* ── Initialize flowers ── */
-  const initFlowers = useCallback(() => {
-    const flowers: Flower[] = [];
-    for (let i = 0; i < FLOWER_COUNT; i++) {
-      flowers.push({
-        x: Math.random() * 100,
-        y: Math.random() * 120,
-        size: 8 + Math.random() * 24,
-        speed: 8 + Math.random() * 12,
-        opacity: 0.35 + Math.random() * 0.3,
-        rotation: Math.random() * 360,
-        rotSpeed: (Math.random() - 0.5) * 40,
-        sway: Math.random() * Math.PI * 2,
-        swaySpeed: 0.5 + Math.random() * 1.5,
-        swayAmp: 10 + Math.random() * 20,
-        type: Math.floor(Math.random() * FLOWER_PATHS.length),
-        color: FLOWER_COLORS[Math.floor(Math.random() * FLOWER_COLORS.length)],
-      });
-    }
-    flowersRef.current = flowers;
+  const initPetals = useCallback((w: number, h: number) => {
+    petalsRef.current = Array.from({ length: PETAL_COUNT }, (_, i) => {
+      const layer = i % 3;
+      const sizeMult = [0.8, 1.5, 2.5][layer];
+      const palette = pick(PETAL_PALETTES);
+      return {
+        x: rnd() * w,
+        y: rnd() * h,
+        vx: rndR(-0.3, 0.3),
+        vy: -rndR(0.15, 0.5) * [0.4, 0.8, 1.2][layer],
+        size: rndR(15, 30) * sizeMult,
+        rotation: rnd() * Math.PI * 2,
+        rotSpeed: rndR(-0.012, 0.012),
+        tilt: rnd() * Math.PI * 2,
+        tiltSpeed: rndR(0.008, 0.025),
+        opacity: [0.4, 0.85, 0.7][layer], // highly visible
+        color: palette.body,
+        highlightColor: palette.hl,
+        shadowColor: palette.sh,
+        layer,
+      };
+    });
   }, []);
 
-  /* ── Initialize particles ── */
-  const initParticles = useCallback(() => {
-    const particles: Particle[] = [];
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const size = 2 + Math.random() * 4;
-      particles.push({
-        x: Math.random() * 100,
-        y: Math.random() * 110,
-        size,
-        speed: 6 + Math.random() * 12,
-        opacity: 0.4 + Math.random() * 0.45,
-        drift: Math.random() * Math.PI * 2,
-        driftSpeed: 0.3 + Math.random() * 0.7,
-        twinkleSpeed: 1.5 + Math.random() * 2,
-        twinkleOffset: Math.random() * Math.PI * 2,
-        color: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)],
-        hasGlow: size > 3.5,
-      });
-    }
-    particlesRef.current = particles;
+  const initMols = useCallback((w: number, h: number) => {
+    molsRef.current = Array.from({ length: MOL_COUNT }, () => ({
+      x: rnd() * w,
+      y: rnd() * h,
+      vx: rndR(-0.15, 0.15),
+      vy: rndR(-0.25, -0.05),
+      scale: rndR(14, 28),
+      rotation: rnd() * Math.PI * 2,
+      rotSpeed: rndR(-0.005, 0.005),
+      opacity: rndR(0.08, 0.18),
+      type: Math.floor(rnd() * SHAPES.length),
+    }));
   }, []);
 
-  /* ── Initialize river lines ── */
-  const initRiverLines = useCallback(() => {
-    const lines: RiverLine[] = [];
-    for (let i = 0; i < RIVER_LINE_COUNT; i++) {
-      const points: { x: number; y: number }[] = [];
-      const segments = 8;
-      const startX = -10 + Math.random() * 20;
-      const startY = -5 + (i / RIVER_LINE_COUNT) * 110;
-      for (let j = 0; j <= segments; j++) {
-        points.push({
-          x: startX + (j / segments) * 120,
-          y: startY + Math.sin(j * 0.8 + i) * 15 + Math.random() * 8,
-        });
-      }
-      lines.push({
-        points,
-        speed: 4 + Math.random() * 8,
-        opacity: 0.2 + Math.random() * 0.25,
-        width: 1 + Math.random() * 2,
-        dashOffset: Math.random() * 1000,
-        shimmerPositions: Array.from({ length: 3 }, () => Math.random()),
-      });
-    }
-    riverLinesRef.current = lines;
-  }, []);
-
-  /* ── Main animation loop ── */
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
-
-    let isVisible = true;
-
-    const handleVisibility = () => {
-      isVisible = document.visibilityState === 'visible';
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
 
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      initPetals(canvas.width, canvas.height);
+      initMols(canvas.width, canvas.height);
     };
     resize();
-    window.addEventListener('resize', resize);
+    window.addEventListener('resize', resize, { passive: true });
 
-    initFlowers();
-    initParticles();
-    initRiverLines();
+    const onVis = () => { visRef.current = document.visibilityState === 'visible'; };
+    document.addEventListener('visibilitychange', onVis);
 
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    /* ─── Draw a Rose Petal (curled, layered, realistic) ─── */
+    const drawRosePetal = (x: number, y: number, r: number, rot: number, tilt: number, p: Petal3D) => {
+      const squeeze = Math.abs(Math.cos(tilt));
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rot);
+      ctx.scale(Math.max(squeeze, 0.2), 1);
 
-    const animate = () => {
-      animFrameRef.current = requestAnimationFrame(animate);
-      if (!isVisible) return;
+      // Drop shadow
+      ctx.beginPath();
+      ctx.ellipse(r * 0.06, r * 0.12, r * 0.55, r * 0.9, 0, 0, Math.PI * 2);
+      ctx.fillStyle = p.shadowColor + (p.opacity * 0.15) + ')';
+      ctx.fill();
 
-      const w = canvas.width;
-      const h = canvas.height;
-      timeRef.current += 0.016;
-      const t = timeRef.current;
+      // Main petal shape — wide, cupped, like a real rose petal
+      ctx.beginPath();
+      ctx.moveTo(0, -r);
+      ctx.bezierCurveTo(r * 0.65, -r * 0.75, r * 0.85, -r * 0.2, r * 0.7, r * 0.25);
+      ctx.bezierCurveTo(r * 0.55, r * 0.55, r * 0.2, r * 0.75, 0, r * 0.8);
+      ctx.bezierCurveTo(-r * 0.2, r * 0.75, -r * 0.55, r * 0.55, -r * 0.7, r * 0.25);
+      ctx.bezierCurveTo(-r * 0.85, -r * 0.2, -r * 0.65, -r * 0.75, 0, -r);
+      const grd = ctx.createRadialGradient(0, -r * 0.2, 0, 0, 0, r * 1.1);
+      grd.addColorStop(0, p.highlightColor + (p.opacity * 0.95) + ')');
+      grd.addColorStop(0.35, p.color + (p.opacity * 0.75) + ')');
+      grd.addColorStop(0.7, p.color + (p.opacity * 0.55) + ')');
+      grd.addColorStop(1, p.shadowColor + (p.opacity * 0.35) + ')');
+      ctx.fillStyle = grd;
+      ctx.fill();
 
-      ctx.clearRect(0, 0, w, h);
+      // Soft edge outline
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = p.shadowColor + (p.opacity * 0.4) + ')';
+      ctx.stroke();
 
-      // ── Draw River Lines ──
-      const lines = riverLinesRef.current;
-      for (const line of lines) {
-        if (prefersReducedMotion) {
-          line.dashOffset = 0;
-        } else {
-          line.dashOffset += line.speed * 0.5;
-        }
+      // Inner curl shadow (gives 3D cupped look)
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.15, -r * 0.3);
+      ctx.bezierCurveTo(r * 0.3, -r * 0.1, r * 0.35, r * 0.3, 0, r * 0.5);
+      ctx.bezierCurveTo(-r * 0.35, r * 0.3, -r * 0.3, -r * 0.1, -r * 0.15, -r * 0.3);
+      ctx.fillStyle = p.shadowColor + (p.opacity * 0.12) + ')';
+      ctx.fill();
+
+      // Central vein + branching veins
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = p.shadowColor + (p.opacity * 0.4) + ')';
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 0.85);
+      ctx.quadraticCurveTo(0, 0, 0, r * 0.65);
+      ctx.stroke();
+      // Side veins
+      for (let v = 0; v < 4; v++) {
+        const yPos = -r * 0.5 + v * r * 0.3;
+        const spread = r * (0.15 + v * 0.08);
+        ctx.beginPath();
+        ctx.moveTo(0, yPos);
+        ctx.quadraticCurveTo(spread * 0.6, yPos - r * 0.05, spread, yPos + r * 0.06);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, yPos);
+        ctx.quadraticCurveTo(-spread * 0.6, yPos - r * 0.05, -spread, yPos + r * 0.06);
+        ctx.stroke();
+      }
+
+      // Top gloss highlight
+      ctx.beginPath();
+      ctx.ellipse(r * 0.05, -r * 0.55, r * 0.22, r * 0.12, -0.2, 0, Math.PI * 2);
+      ctx.fillStyle = p.highlightColor + (p.opacity * 0.6) + ')';
+      ctx.fill();
+
+      ctx.restore();
+    };
+
+    /* ─── Draw a Cherry Blossom (5 petals + center) ─── */
+    const drawCherryBlossom = (x: number, y: number, r: number, rot: number, tilt: number, p: Petal3D) => {
+      const squeeze = Math.abs(Math.cos(tilt));
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rot);
+      ctx.scale(Math.max(squeeze, 0.25), 1);
+
+      const petalR = r * 0.65;
+      for (let i = 0; i < 5; i++) {
+        const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+        const px = Math.cos(angle) * r * 0.35;
+        const py = Math.sin(angle) * r * 0.35;
 
         ctx.save();
-        ctx.globalAlpha = prefersReducedMotion ? line.opacity * 0.3 : line.opacity;
-        ctx.strokeStyle = '#DCE9E4';
-        ctx.lineWidth = line.width;
-        ctx.setLineDash([20, 30, 10, 40]);
-        ctx.lineDashOffset = -line.dashOffset;
-        ctx.lineCap = 'round';
+        ctx.translate(px, py);
+        ctx.rotate(angle + Math.PI / 2);
 
+        // Petal shape — rounded with notch at tip (iconic cherry blossom)
         ctx.beginPath();
-        const pts = line.points;
-        ctx.moveTo((pts[0].x / 100) * w, (pts[0].y / 100) * h);
-        for (let j = 1; j < pts.length; j++) {
-          const prev = pts[j - 1];
-          const curr = pts[j];
-          const cpx = ((prev.x + curr.x) / 2 / 100) * w;
-          const cpy = ((prev.y + curr.y) / 2 / 100) * h;
-          const endX = (curr.x / 100) * w;
-          const endY = (curr.y / 100) * h;
-          ctx.quadraticCurveTo(cpx, cpy, endX, endY);
-        }
+        ctx.moveTo(0, petalR * 0.1);
+        ctx.bezierCurveTo(petalR * 0.45, petalR * 0.05, petalR * 0.5, -petalR * 0.5, petalR * 0.12, -petalR);
+        ctx.lineTo(0, -petalR * 0.85); // Notch
+        ctx.lineTo(-petalR * 0.12, -petalR);
+        ctx.bezierCurveTo(-petalR * 0.5, -petalR * 0.5, -petalR * 0.45, petalR * 0.05, 0, petalR * 0.1);
+
+        const grd = ctx.createLinearGradient(0, petalR * 0.1, 0, -petalR);
+        grd.addColorStop(0, p.color + (p.opacity * 0.8) + ')');
+        grd.addColorStop(0.5, p.highlightColor + (p.opacity * 0.7) + ')');
+        grd.addColorStop(1, p.highlightColor + (p.opacity * 0.9) + ')');
+        ctx.fillStyle = grd;
+        ctx.fill();
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = p.shadowColor + (p.opacity * 0.3) + ')';
         ctx.stroke();
 
-        // Shimmer highlights
-        if (!prefersReducedMotion) {
-          for (const sp of line.shimmerPositions) {
-            const shimmerPhase = (t * line.speed * 0.1 + sp * 10) % 1;
-            if (shimmerPhase < 0.3) {
-              const shimmerIdx = Math.floor(sp * (pts.length - 1));
-              const pt = pts[Math.min(shimmerIdx, pts.length - 1)];
-              const sx = (pt.x / 100) * w + Math.sin(t + sp * 10) * 20;
-              const sy = (pt.y / 100) * h;
-              const shimmerOpacity = (1 - shimmerPhase / 0.3) * 0.4;
-              ctx.globalAlpha = shimmerOpacity;
-              ctx.strokeStyle = '#FFFFFF';
-              ctx.lineWidth = line.width * 1.5;
-              ctx.setLineDash([5, 80]);
-              ctx.lineDashOffset = -line.dashOffset + shimmerPhase * 100;
-              ctx.beginPath();
-              ctx.moveTo(sx - 30, sy);
-              ctx.lineTo(sx + 30, sy);
-              ctx.stroke();
-            }
-          }
-        }
+        // Petal vein
+        ctx.beginPath();
+        ctx.moveTo(0, petalR * 0.05);
+        ctx.lineTo(0, -petalR * 0.8);
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = p.shadowColor + (p.opacity * 0.3) + ')';
+        ctx.stroke();
+
         ctx.restore();
       }
 
-      // ── Draw Particles ──
-      const particles = particlesRef.current;
-      for (const p of particles) {
-        const speedMult = prefersReducedMotion ? 0 : 1;
-        p.y -= (p.speed * 0.005) * speedMult;
-        p.drift += p.driftSpeed * 0.01;
-        const x = (p.x / 100) * w + Math.sin(p.drift) * 30;
-        const y = (p.y / 100) * h;
-
-        if (p.y < -5) {
-          p.y = 110;
-          p.x = Math.random() * 100;
-        }
-
-        const twinkle = Math.sin(t * p.twinkleSpeed + p.twinkleOffset);
-        const opacity = p.opacity * (0.5 + 0.5 * ((twinkle + 1) / 2));
-
-        ctx.save();
-        ctx.globalAlpha = prefersReducedMotion ? p.opacity * 0.3 : opacity;
-        ctx.fillStyle = p.color;
+      // Center stamens (tiny dots)
+      for (let s = 0; s < 6; s++) {
+        const sa = (s / 6) * Math.PI * 2;
+        const sr = r * 0.12;
+        const sx = Math.cos(sa) * sr;
+        const sy = Math.sin(sa) * sr;
         ctx.beginPath();
-        ctx.arc(x, y, p.size, 0, Math.PI * 2);
+        ctx.arc(sx, sy, r * 0.04, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(199,167,106,${p.opacity * 0.8})`;
         ctx.fill();
+      }
+      // Center dot
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.06, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(180,150,100,${p.opacity * 0.7})`;
+      ctx.fill();
 
-        // Glow for larger particles
-        if (p.hasGlow && !prefersReducedMotion) {
-          ctx.globalAlpha = opacity * 0.3;
-          ctx.shadowColor = '#C7A76A';
-          ctx.shadowBlur = 6;
-          ctx.beginPath();
-          ctx.arc(x, y, p.size, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-        }
-        ctx.restore();
+      ctx.restore();
+    };
+
+    /* ─── Draw a single loose petal (like fallen from a flower) ─── */
+    const drawLoosePetal = (x: number, y: number, r: number, rot: number, tilt: number, p: Petal3D) => {
+      const squeeze = Math.abs(Math.cos(tilt));
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rot);
+      ctx.scale(Math.max(squeeze, 0.2), 1);
+
+      // Rounded petal with gentle curl
+      ctx.beginPath();
+      ctx.moveTo(0, -r);
+      ctx.bezierCurveTo(r * 0.55, -r * 0.8, r * 0.75, -r * 0.15, r * 0.5, r * 0.35);
+      ctx.bezierCurveTo(r * 0.3, r * 0.65, r * 0.1, r * 0.8, 0, r * 0.85);
+      ctx.bezierCurveTo(-r * 0.1, r * 0.8, -r * 0.3, r * 0.65, -r * 0.5, r * 0.35);
+      ctx.bezierCurveTo(-r * 0.75, -r * 0.15, -r * 0.55, -r * 0.8, 0, -r);
+      const grd = ctx.createLinearGradient(-r * 0.3, -r, r * 0.3, r * 0.85);
+      grd.addColorStop(0, p.highlightColor + (p.opacity * 0.9) + ')');
+      grd.addColorStop(0.3, p.color + (p.opacity * 0.7) + ')');
+      grd.addColorStop(0.7, p.color + (p.opacity * 0.6) + ')');
+      grd.addColorStop(1, p.shadowColor + (p.opacity * 0.4) + ')');
+      ctx.fillStyle = grd;
+      ctx.fill();
+      ctx.lineWidth = 1.0;
+      ctx.strokeStyle = p.shadowColor + (p.opacity * 0.3) + ')';
+      ctx.stroke();
+
+      // Central vein (curved)
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 0.9);
+      ctx.quadraticCurveTo(r * 0.05, 0, 0, r * 0.75);
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = p.shadowColor + (p.opacity * 0.4) + ')';
+      ctx.stroke();
+
+      // 3 side veins each side
+      for (let v = 0; v < 3; v++) {
+        const yy = -r * 0.4 + v * r * 0.35;
+        const sp = r * (0.15 + v * 0.1);
+        ctx.beginPath();
+        ctx.moveTo(0, yy);
+        ctx.quadraticCurveTo(sp * 0.5, yy - r * 0.04, sp, yy + r * 0.08);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, yy);
+        ctx.quadraticCurveTo(-sp * 0.5, yy - r * 0.04, -sp, yy + r * 0.08);
+        ctx.stroke();
+      }
+
+      // Gloss
+      ctx.beginPath();
+      ctx.ellipse(r * 0.05, -r * 0.5, r * 0.2, r * 0.1, -0.15, 0, Math.PI * 2);
+      ctx.fillStyle = p.highlightColor + (p.opacity * 0.55) + ')';
+      ctx.fill();
+
+      ctx.restore();
+    };
+
+    /* ─── Master draw function picks the flower type ─── */
+    const draw3DPetal = (p: Petal3D) => {
+      const flowerType = p.layer; // 0 = rose petal, 1 = cherry blossom, 2 = loose petal
+      if (flowerType === 0) {
+        drawRosePetal(p.x, p.y, p.size, p.rotation, p.tilt, p);
+      } else if (flowerType === 1) {
+        drawCherryBlossom(p.x, p.y, p.size * 1.3, p.rotation, p.tilt, p);
+      } else {
+        drawLoosePetal(p.x, p.y, p.size, p.rotation, p.tilt, p);
       }
     };
 
-    animate();
+    /* ─── Draw glass molecule atom (skin/gold tone) ─── */
+    const drawAtom = (x: number, y: number, r: number, alpha: number) => {
+      const bodyGrd = ctx.createRadialGradient(x, y, r * 0.1, x, y, r);
+      bodyGrd.addColorStop(0, `rgba(220,200,175,${alpha * 0.5})`);
+      bodyGrd.addColorStop(0.7, `rgba(200,180,155,${alpha * 0.3})`);
+      bodyGrd.addColorStop(1, `rgba(190,170,145,${alpha * 0.05})`);
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = bodyGrd;
+      ctx.fill();
+
+      // Specular
+      const hx = x - r * 0.28, hy = y - r * 0.28, hr = r * 0.3;
+      const hlGrd = ctx.createRadialGradient(hx, hy, 0, hx, hy, hr);
+      hlGrd.addColorStop(0, `rgba(255,255,255,${alpha * 0.8})`);
+      hlGrd.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.beginPath();
+      ctx.arc(hx, hy, hr, 0, Math.PI * 2);
+      ctx.fillStyle = hlGrd;
+      ctx.fill();
+    };
+
+    const drawBond = (x1: number, y1: number, x2: number, y2: number, r: number, alpha: number) => {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.lineWidth = r * 0.3;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = `rgba(210,190,165,${alpha * 0.3})`;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.lineWidth = r * 0.08;
+      ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.4})`;
+      ctx.stroke();
+    };
+
+    /* ─── Ambient warm glow ─── */
+    const drawAmbient = (t: number) => {
+      const w = canvas.width, h = canvas.height;
+
+      // Warm golden glow top-right
+      const p1 = 0.18 + 0.06 * Math.sin(t * 0.4);
+      const g1 = ctx.createRadialGradient(w * 0.82, h * 0.12, 0, w * 0.82, h * 0.12, w * 0.5);
+      g1.addColorStop(0, `rgba(212,185,140,${p1})`);
+      g1.addColorStop(1, 'rgba(212,185,140,0)');
+      ctx.fillStyle = g1; ctx.fillRect(0, 0, w, h);
+
+      // Subtle rose accent bottom-left
+      const p2 = 0.1 + 0.05 * Math.sin(t * 0.3 + 1.5);
+      const g2 = ctx.createRadialGradient(w * 0.15, h * 0.85, 0, w * 0.15, h * 0.85, w * 0.55);
+      g2.addColorStop(0, `rgba(215,170,170,${p2})`);
+      g2.addColorStop(1, 'rgba(215,170,170,0)');
+      ctx.fillStyle = g2; ctx.fillRect(0, 0, w, h);
+
+      // Warm center bloom
+      const p3 = 0.06 + 0.03 * Math.sin(t * 0.25 + 3);
+      const g3 = ctx.createRadialGradient(w * 0.5, h * 0.4, 0, w * 0.5, h * 0.4, w * 0.6);
+      g3.addColorStop(0, `rgba(245,235,220,${p3})`);
+      g3.addColorStop(1, 'rgba(245,235,220,0)');
+      ctx.fillStyle = g3; ctx.fillRect(0, 0, w, h);
+    };
+
+    /* ─── Main Loop ─── */
+    const animate = () => {
+      rafRef.current = requestAnimationFrame(animate);
+      if (!visRef.current) return;
+
+      tRef.current += 0.016;
+      const t = tRef.current;
+      const w = canvas.width, h = canvas.height;
+
+      ctx.clearRect(0, 0, w, h);
+      drawAmbient(t);
+
+      // Draw molecules first (behind petals)
+      for (const m of molsRef.current) {
+        m.x += m.vx; m.y += m.vy; m.rotation += m.rotSpeed;
+        if (m.y < -120) { m.y = h + 120; m.x = rnd() * w; }
+        if (m.x < -120) m.x = w + 120;
+        if (m.x > w + 120) m.x = -120;
+
+        const shape = SHAPES[m.type];
+        const s = m.scale;
+        const cosR = Math.cos(m.rotation), sinR = Math.sin(m.rotation);
+        const tx: number[] = [], ty: number[] = [];
+        for (let n = 0; n < shape.nodes.length; n++) {
+          const nx = shape.nodes[n][0] * s, ny = shape.nodes[n][1] * s;
+          tx[n] = m.x + nx * cosR - ny * sinR;
+          ty[n] = m.y + nx * sinR + ny * cosR;
+        }
+        for (const [a, b] of shape.edges) drawBond(tx[a], ty[a], tx[b], ty[b], s, m.opacity);
+        for (let n = 0; n < tx.length; n++) drawAtom(tx[n], ty[n], s * 0.4, m.opacity);
+      }
+
+      // Draw 3D petals on top
+      for (const p of petalsRef.current) {
+        p.x += p.vx + Math.sin(p.tilt * 0.5) * 0.3;
+        p.y += p.vy;
+        p.rotation += p.rotSpeed;
+        p.tilt += p.tiltSpeed;
+
+        if (p.y < -80) { p.y = h + 80; p.x = rnd() * w; }
+        if (p.x < -80) p.x = w + 80;
+        if (p.x > w + 80) p.x = -80;
+
+        draw3DPetal(p);
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(animate);
 
     return () => {
-      cancelAnimationFrame(animFrameRef.current);
-      document.removeEventListener('visibilitychange', handleVisibility);
+      cancelAnimationFrame(rafRef.current);
       window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', onVis);
     };
-  }, [initFlowers, initParticles, initRiverLines]);
-
-  const prefersReducedMotion = typeof window !== 'undefined'
-    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    : false;
+  }, [initPetals, initMols]);
 
   return (
-    <div ref={containerRef} className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
-      {/* Layer 1: Warm gradient base */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: 'radial-gradient(ellipse at 30% 20%, rgba(255,249,243,1) 0%, rgba(246,239,230,1) 40%, rgba(232,215,184,0.3) 70%, rgba(255,249,243,1) 100%)',
-          zIndex: 0,
-        }}
-      />
+    <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }} aria-hidden="true">
+      {/* Warm skin-tone base */}
+      <div className="absolute inset-0" style={{
+        background: 'radial-gradient(ellipse 120% 80% at 30% 10%, #FFF9F3 0%, #F6EFE6 45%, rgba(232,215,184,0.4) 75%, #FFF9F3 100%)'
+      }} />
 
-      {/* Layer 2: River Flow (Canvas) */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0"
-        style={{ zIndex: 1 }}
-      />
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
 
-      {/* Layer 3: Botanical floating flowers (SVG) */}
-      <div className="absolute inset-0" style={{ zIndex: 2 }}>
-        {flowersRef.current.length === 0 &&
-          // Pre-render initial flowers (will be replaced by useEffect init)
-          Array.from({ length: FLOWER_COUNT }).map((_, i) => {
-            const flower: Flower = {
-              x: Math.random() * 100,
-              y: Math.random() * 120,
-              size: 8 + Math.random() * 24,
-              speed: 8 + Math.random() * 12,
-              opacity: 0.35 + Math.random() * 0.3,
-              rotation: Math.random() * 360,
-              rotSpeed: (Math.random() - 0.5) * 40,
-              sway: Math.random() * Math.PI * 2,
-              swaySpeed: 0.5 + Math.random() * 1.5,
-              swayAmp: 10 + Math.random() * 20,
-              type: i % FLOWER_PATHS.length,
-              color: FLOWER_COLORS[i % FLOWER_COLORS.length],
-            };
-            const duration = flower.speed;
-            const delay = -(Math.random() * flower.speed);
-            return (
-              <svg
-                key={`flower-${i}`}
-                className="absolute"
-                style={{
-                  left: `${flower.x}%`,
-                  width: flower.size,
-                  height: flower.size,
-                  opacity: prefersReducedMotion ? flower.opacity * 0.3 : undefined,
-                  animation: prefersReducedMotion
-                    ? 'none'
-                    : `float-up ${duration}s linear ${delay}s infinite`,
-                  animationDelay: `${delay}s`,
-                }}
-                viewBox={`-${flower.size / 2} -${flower.size / 2} ${flower.size} ${flower.size}`}
-              >
-                <g
-                  style={{
-                    transform: `rotate(${flower.rotation}deg)`,
-                    transformOrigin: 'center',
-                    animation: prefersReducedMotion
-                      ? 'none'
-                      : `spin ${flower.speed * 2}s linear infinite`,
-                  }}
-                >
-                  <path
-                    d={FLOWER_PATHS[flower.type](flower.size)}
-                    fill={flower.color}
-                    opacity={flower.opacity}
-                  />
-                </g>
-              </svg>
-            );
-          })}
-
-        {/* Animated flowers after init */}
-        {flowersRef.current.map((flower, i) => {
-          const duration = flower.speed;
-          const delay = -(Math.random() * flower.speed);
-          return (
-            <svg
-              key={`flower-live-${i}`}
-              className="absolute"
-              style={{
-                left: `${flower.x}%`,
-                width: flower.size,
-                height: flower.size,
-                opacity: prefersReducedMotion ? flower.opacity * 0.3 : undefined,
-                animation: prefersReducedMotion
-                  ? 'none'
-                  : `float-up ${duration}s linear infinite`,
-                animationDelay: `${delay}s`,
-              }}
-              viewBox={`-${flower.size / 2} -${flower.size / 2} ${flower.size} ${flower.size}`}
-            >
-              <g
-                style={{
-                  transform: `rotate(${flower.rotation}deg)`,
-                  transformOrigin: 'center',
-                  animation: prefersReducedMotion
-                    ? 'none'
-                    : `spin ${flower.speed * 2}s linear infinite`,
-                }}
-              >
-                <path
-                  d={FLOWER_PATHS[flower.type](flower.size)}
-                  fill={flower.color}
-                  opacity={flower.opacity}
-                />
-              </g>
-            </svg>
-          );
-        })}
-      </div>
-
-      {/* Layer 4: Gold particles (CSS fallback + canvas overlay) */}
-      <div className="absolute inset-0" style={{ zIndex: 3 }}>
-        {Array.from({ length: 20 }).map((_, i) => {
-          const size = 2 + Math.random() * 4;
-          const x = Math.random() * 100;
-          const duration = 6 + Math.random() * 12;
-          const delay = -(Math.random() * 18);
-          const hasGlow = size > 3;
-          return (
-            <div
-              key={`particle-${i}`}
-              className="absolute rounded-full"
-              style={{
-                left: `${x}%`,
-                width: size,
-                height: size,
-                backgroundColor: PARTICLE_COLORS[i % PARTICLE_COLORS.length],
-                opacity: prefersReducedMotion ? 0.12 : undefined,
-                boxShadow: hasGlow && !prefersReducedMotion
-                  ? '0 0 6px 2px rgba(199,167,106,0.5)'
-                  : 'none',
-                animation: prefersReducedMotion
-                  ? 'none'
-                  : `float-particle ${duration}s linear ${delay}s infinite, twinkle ${2 + Math.random()}s ease-in-out ${Math.random() * 2}s infinite`,
-              }}
-            />
-          );
-        })}
-      </div>
-
-      {/* Layer 5: Linen texture overlay */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E")`,
-          backgroundRepeat: 'repeat',
-          opacity: 0.025,
-          mixBlendMode: 'multiply',
-          zIndex: 4,
-        }}
-      />
+      {/* Subtle grain */}
+      <div className="absolute inset-0 opacity-[0.025] mix-blend-overlay" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
+      }} />
     </div>
   );
 }
