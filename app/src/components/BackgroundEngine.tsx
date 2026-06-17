@@ -58,7 +58,6 @@ const PETAL_PALETTES = [
 ───────────────────────────────────────── */
 const rnd = () => Math.random();
 const rndR = (a: number, b: number) => a + rnd() * (b - a);
-const pick = <T,>(arr: T[]) => arr[Math.floor(rnd() * arr.length)];
 
 const PETAL_COUNT = 22;
 const MOL_COUNT = 8; // Very few molecules, subtle
