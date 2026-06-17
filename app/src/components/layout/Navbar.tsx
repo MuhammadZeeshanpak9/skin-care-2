@@ -19,14 +19,20 @@ export default function Navbar() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const location = useLocation();
   const lastScrollY = useRef(0);
+  const rafPending = useRef(false);
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {
-      const y = window.scrollY;
-      setScrolled(y > 50);
-      setVisible(y < lastScrollY.current || y < 100);
-      lastScrollY.current = y;
+      if (rafPending.current) return;
+      rafPending.current = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        setScrolled(y > 50);
+        setVisible(y < lastScrollY.current || y < 100);
+        lastScrollY.current = y;
+        rafPending.current = false;
+      });
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);

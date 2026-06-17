@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Overline } from '@/components/ui/typography';
-import { fadeUp } from '@/lib/animations';
+import { slideLeft, slideRight, viewportOnce } from '@/lib/animations';
 
 export default function BrandStory() {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -16,9 +16,13 @@ export default function BrandStory() {
     <section ref={sectionRef} className="relative py-24 lg:py-32 bg-transparent overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-          {/* Left: Image */}
+          {/* Left: Image — enters from left */}
           <motion.div
             style={{ y: imageY }}
+            initial="hidden"
+            whileInView="visible"
+            viewport={viewportOnce}
+            variants={slideRight(0)}
             className="w-full lg:w-1/2 relative"
           >
             <div className="aspect-[3/4] rounded-3xl overflow-hidden glass-gold relative">
@@ -35,12 +39,12 @@ export default function BrandStory() {
             </div>
           </motion.div>
 
-          {/* Right: Editorial text */}
+          {/* Right: Editorial text — enters from right */}
           <motion.div
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: '-60px' }}
-            variants={fadeUp()}
+            viewport={viewportOnce}
+            variants={slideLeft(0.15)}
             className="w-full lg:w-1/2"
           >
             <Overline className="text-text-light mb-4">OUR MISSION</Overline>

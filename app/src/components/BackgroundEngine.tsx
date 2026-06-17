@@ -59,8 +59,8 @@ const PETAL_PALETTES = [
 const rnd = () => Math.random();
 const rndR = (a: number, b: number) => a + rnd() * (b - a);
 
-const PETAL_COUNT = 22;
-const MOL_COUNT = 8; // Very few molecules, subtle
+const PETAL_COUNT = 14;
+const MOL_COUNT = 4;
 
 /* ─────────────────────────────────────────
    Component
@@ -392,13 +392,6 @@ export default function BackgroundEngine() {
       g2.addColorStop(0, `rgba(215,170,170,${p2})`);
       g2.addColorStop(1, 'rgba(215,170,170,0)');
       ctx.fillStyle = g2; ctx.fillRect(0, 0, w, h);
-
-      // Warm center bloom
-      const p3 = 0.06 + 0.03 * Math.sin(t * 0.25 + 3);
-      const g3 = ctx.createRadialGradient(w * 0.5, h * 0.4, 0, w * 0.5, h * 0.4, w * 0.6);
-      g3.addColorStop(0, `rgba(245,235,220,${p3})`);
-      g3.addColorStop(1, 'rgba(245,235,220,0)');
-      ctx.fillStyle = g3; ctx.fillRect(0, 0, w, h);
     };
 
     /* ─── Main Loop ─── */

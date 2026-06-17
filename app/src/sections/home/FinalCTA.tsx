@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { Link } from 'react-router';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowUpRight, ArrowRight } from 'lucide-react';
-import { fadeUp } from '@/lib/animations';
+import { slideLeft, slideRight } from '@/lib/animations';
 
 export default function FinalCTA() {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -16,9 +16,13 @@ export default function FinalCTA() {
   return (
     <section ref={sectionRef} className="relative overflow-hidden">
       <div className="flex flex-col lg:flex-row min-h-[500px] lg:min-h-[600px]">
-        {/* Left: Image */}
+        {/* Left: Image — enters from left */}
         <motion.div
           style={{ y: imageY }}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-60px' }}
+          variants={slideRight(0)}
           className="lg:w-1/2 relative min-h-[300px] lg:min-h-full"
         >
           <img
@@ -30,12 +34,12 @@ export default function FinalCTA() {
           <div className="absolute inset-0 bg-gradient-to-r from-transparent to-dark-panel/10" />
         </motion.div>
 
-        {/* Right: Dark panel */}
+        {/* Right: Dark panel — enters from right */}
         <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: '-60px' }}
-          variants={fadeUp()}
+          variants={slideLeft(0.15)}
           className="lg:w-1/2 bg-black/40 backdrop-blur-md flex items-center"
         >
           <div className="px-8 sm:px-12 lg:px-20 py-16 lg:py-24 w-full max-w-lg">

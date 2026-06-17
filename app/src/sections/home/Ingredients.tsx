@@ -3,7 +3,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { Link } from 'react-router';
 import { ArrowRight } from 'lucide-react';
 import { Overline } from '@/components/ui/typography';
-import { fadeUp } from '@/lib/animations';
+import { fadeUp, slideLeft, slideRight } from '@/lib/animations';
 
 const ingredients = [
   {
@@ -57,19 +57,19 @@ function IngredientCard({
   const isLeft = index % 2 === 0;
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      style={{ y }}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: '-80px' }}
-      variants={fadeUp(index * 0.15)}
       className={`flex flex-col lg:flex-row items-center gap-8 lg:gap-16 mb-20 last:mb-0 ${
         isLeft ? '' : 'lg:flex-row-reverse'
       }`}
     >
-      {/* Image block */}
-      <div
+      {/* Image block — enters from its natural side */}
+      <motion.div
+        style={{ y }}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: '-80px' }}
+        variants={isLeft ? slideRight(0) : slideLeft(0)}
         className={`w-full lg:w-[55%] relative ${
           isLeft ? 'lg:-mr-12' : 'lg:-ml-12'
         }`}
@@ -85,10 +85,16 @@ function IngredientCard({
           <div className="absolute top-6 right-6 w-20 h-20 rounded-full border border-white/20" />
           <div className="absolute bottom-6 left-6 w-12 h-12 rounded-full border border-white/10" />
         </div>
-      </div>
+      </motion.div>
 
-      {/* Text block */}
-      <div className={`w-full lg:w-[45%] ${isLeft ? 'lg:pl-8' : 'lg:pr-8'}`}>
+      {/* Text block — enters from opposite side */}
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: '-80px' }}
+        variants={isLeft ? slideLeft(0.15) : slideRight(0.15)}
+        className={`w-full lg:w-[45%] ${isLeft ? 'lg:pl-8' : 'lg:pr-8'}`}
+      >
         <span className="overline text-text-light block mb-3">
           {ingredient.origin}
         </span>
@@ -105,8 +111,8 @@ function IngredientCard({
           Learn More
           <ArrowRight className="w-4 h-4" />
         </Link>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }
 
