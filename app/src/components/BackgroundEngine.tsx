@@ -45,11 +45,12 @@ const SHAPES = [
    3D Petal Colors (warm skin tones + subtle pink accents)
 ───────────────────────────────────────── */
 const PETAL_PALETTES = [
-  { body: 'rgba(210,180,160,', hl: 'rgba(245,235,225,', sh: 'rgba(180,150,130,' }, // warm skin
-  { body: 'rgba(200,170,150,', hl: 'rgba(240,228,218,', sh: 'rgba(170,140,120,' }, // deeper skin
-  { body: 'rgba(220,185,170,', hl: 'rgba(250,240,232,', sh: 'rgba(190,158,140,' }, // rosy skin
-  { body: 'rgba(215,160,165,', hl: 'rgba(245,220,222,', sh: 'rgba(185,130,135,' }, // subtle pink accent
-  { body: 'rgba(195,175,155,', hl: 'rgba(235,225,215,', sh: 'rgba(165,145,125,' }, // sand
+  { body: 'rgba(124,154,120,', hl: 'rgba(160,190,156,', sh: 'rgba(88,118,84,'   }, // #7C9A78 luxury green
+  { body: 'rgba(242,169,0,',   hl: 'rgba(255,210,80,',  sh: 'rgba(200,130,0,'   }, // #F2A900 solar gold
+  { body: 'rgba(217,182,170,', hl: 'rgba(240,215,205,', sh: 'rgba(185,148,136,' }, // #D9B6AA rose
+  { body: 'rgba(232,215,184,', hl: 'rgba(250,240,215,', sh: 'rgba(195,175,140,' }, // #E8D7B8 champagne
+  { body: 'rgba(99,65,65,',    hl: 'rgba(140,100,100,', sh: 'rgba(65,35,35,'    }, // #634141 deep mauve
+  { body: 'rgba(228,244,222,', hl: 'rgba(245,255,242,', sh: 'rgba(185,210,178,' }, // #E4F4DE light sage
 ];
 
 /* ─────────────────────────────────────────
@@ -77,7 +78,7 @@ export default function BackgroundEngine() {
     petalsRef.current = Array.from({ length: PETAL_COUNT }, (_, i) => {
       const layer = i % 3;
       const sizeMult = [0.8, 1.5, 2.5][layer];
-      const palette = pick(PETAL_PALETTES);
+      const palette = PETAL_PALETTES[i % PETAL_PALETTES.length];
       return {
         x: rnd() * w,
         y: rnd() * h,
@@ -88,7 +89,7 @@ export default function BackgroundEngine() {
         rotSpeed: rndR(-0.012, 0.012),
         tilt: rnd() * Math.PI * 2,
         tiltSpeed: rndR(0.008, 0.025),
-        opacity: [0.4, 0.85, 0.7][layer], // highly visible
+        opacity: [0.55, 0.75, 0.70][layer],
         color: palette.body,
         highlightColor: palette.hl,
         shadowColor: palette.sh,
